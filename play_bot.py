@@ -178,16 +178,27 @@ def server_task(queue_in, queue_out, loop):
         lambda ws, path: handler(ws, path, queue_in, queue_out), "localhost", 8765, loop=loop)
 
     asyncio.get_event_loop().run_until_complete(start_server)
-    asyncio.get_event_loop().run_forever()        
+    asyncio.get_event_loop().run_forever()
 
+
+class DiscordConnector():
+    def __init__(self):
+        self.queue_in = Queue(1)
+        self.queue_out = Queue(1)
+
+    def start(self):
+        loop = asyncio.new_event_loop()
+        Thread(target=server_task, args=(self.queue_in, self.queue_out, loop)).start()
+        Thread(target=bot.start_bot).start()
+
+    def receive(self):
+        return self.queue_in.get()
+
+    def send(self, message):
+        self.queue_out.put(message)
 
 def play(generator):
-    queue_in = Queue(1)
-    queue_out = Queue(1)
-    loop = asyncio.new_event_loop()
-    Thread(target=server_task, args=(queue_in, queue_out, loop)).start()
-    Thread(target=bot.start_bot).start()
-
+    discord_connector = DiscordConnector()
     story_manager = UnconstrainedStoryManager(generator)
     ai_player = AIPlayer(generator)
     print("\n")
@@ -207,7 +218,7 @@ def play(generator):
     colPrint("Go to https://github.com/cloveranon/Clover-Edition/ or email cloveranon@nuke.africa for bug reports, help, and feature requests.", colors['subsubtitle'])
 
     while True:
-        queue_in.get()
+        discord_connector.receive()
         # May be needed to avoid out of mem
         gc.collect()
         torch.cuda.empty_cache()
@@ -253,7 +264,7 @@ def play(generator):
         story_string = str(story_manager.story)
         colPrint(story_string, colors["ai-text"])
 
-        queue_out.put(story_string)
+        discord_connector.send(story_string)
 
         while True:
             # Generate suggested actions
@@ -291,7 +302,7 @@ def play(generator):
 
             bell()
             # action = colInput("> ", colors["main-prompt"], colors["user-text"])
-            action = queue_in.get()
+            action = discord_connector.receive()
             
             # Clear suggestions and user input
             if act_alts > 0:
@@ -484,7 +495,7 @@ def play(generator):
                     else:
                         colPrint("Sorry about that...where were we?", colors["query"])
                 colPrint(result, colors["ai-text"])
-                queue_out.put(result)
+                discord_connector.send(result)
 
 
 # This is here for rapid development, without reloading the model. You import play into a jupyternotebook with autoreload
