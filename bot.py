@@ -42,7 +42,7 @@ async def handle_messages(discord_loop):
 
                 LOGGER.info("Received message from application")
                 asyncio.run_coroutine_threadsafe(
-                    client.get_channel(CHANNEL).send(queue_in.get()), discord_loop)
+                    client.get_channel(CHANNEL).send('```' + queue_in.get() + '```'), discord_loop)
             except Exception:
                 pass
 

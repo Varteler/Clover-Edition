@@ -199,6 +199,7 @@ class DiscordConnector():
 
 def play(generator):
     discord_connector = DiscordConnector()
+    discord_connector.start()
     story_manager = UnconstrainedStoryManager(generator)
     ai_player = AIPlayer(generator)
     print("\n")
@@ -353,6 +354,7 @@ def play(generator):
 
                 if len(story_manager.story.actions) == 0:
                     colPrint("You can't go back any farther. ", colors["error"])
+                    discord_connector.send("You can't go back any farther. ")
                     continue
 
                 story_manager.story.actions = story_manager.story.actions[:-1]
@@ -360,8 +362,10 @@ def play(generator):
                 colPrint("Last action reverted. ", colors["message"])
                 if len(story_manager.story.results) > 0:
                     colPrint(story_manager.story.results[-1], colors["ai-text"])
+                    discord_connector.send(story_manager.story.results[-1])
                 else:
                     colPrint(story_manager.story.story_start, colors["ai-text"])
+                    discord_connector.send(story_manager.story.story_start)
                 continue
 
             else:
